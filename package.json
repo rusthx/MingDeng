@@ -1,0 +1,24 @@
+{
+  "name": "mingdeng",
+  "version": "0.1.0",
+  "description": "MingDeng - AI Learning Assistant",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "backend": "cd backend && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8765",
+    "install-deps": "cd backend && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  },
+  "keywords": [
+    "learning",
+    "ai",
+    "assistant",
+    "education",
+    "productivity"
+  ],
+  "author": "MingDeng Team",
+  "license": "MIT"
+}

@@ -1,157 +1,278 @@
-# MingDeng 快速开始指南
+# MingDeng 快速开始指南 🚀
+
+## 系统要求
+
+- Python 3.9 或更高版本
+- Rust 1.70 或更高版本（用于 Tauri）
+- Node.js 16 或更高版本（用于 npm 脚本）
 
 ## 安装步骤
 
 ### 1. 克隆项目
 
 ```bash
-cd /path/to/MingDeng
+git clone https://github.com/your-org/mingdeng.git
+cd mingdeng
 ```
 
-### 2. 创建虚拟环境（推荐）
+### 2. 安装 Python 依赖
+
+```bash
+cd backend
+pip install -r requirements.txt
+cd ..
+```
+
+或使用虚拟环境（推荐）：
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# 或
-venv\Scripts\activate  # Windows
-```
-
-### 3. 安装依赖
-
-```bash
-cd mingdeng
+source venv/bin/activate  # Windows: venv\Scripts\activate
+cd backend
 pip install -r requirements.txt
+cd ..
 ```
 
-### 4. 启动应用
+### 3. 安装 Tauri CLI
 
 ```bash
-streamlit run app.py
+npm install
 ```
 
-浏览器会自动打开 `http://localhost:8501`
+或全局安装：
+
+```bash
+cargo install tauri-cli
+```
+
+### 4. 首次运行
+
+开发模式：
+
+```bash
+npm run dev
+```
+
+或手动启动：
+
+```bash
+# 终端 1: 启动 Python 后端
+npm run backend
+
+# 终端 2: 启动 Tauri 应用
+npm run tauri dev
+```
 
 ## 首次配置
 
-### 1. 配置 API
+1. 启动应用后，点击左侧导航栏的「⚙️ 设置」
+2. 在「API 配置」部分填写：
+   - **API Base URL**: 你的 AI 服务 URL（例如：`https://api.openai.com/v1`）
+   - **API Key**: 你的 API 密钥
+   - **模型名称**: 模型名称（例如：`gpt-4`, `deepseek-chat`）
+3. 点击「保存 API 配置」
 
-**重要说明**: MingDeng 使用 **OpenAI API 规范**，支持任何兼容此规范的服务（不限于 OpenAI 官方）。
+### 支持的 AI 服务
 
-启动后，点击左侧「⚙️ 配置」：
+MingDeng 支持任何 OpenAI 兼容格式的 API：
 
-#### 选项 A: 使用 OpenAI 官方服务
-- API 基础 URL: `https://api.openai.com/v1`
-- API 密钥: 你的 OpenAI API Key
-- 模型名称: `gpt-4o`、`gpt-4o-mini` 等
+#### 云端服务
 
-#### 选项 B: 使用本地模型（Ollama，完全免费）
-1. 先安装 Ollama: https://ollama.com/
-2. 下载模型: `ollama pull qwen2.5:7b`
-3. 在 MingDeng 中配置:
-   - API 基础 URL: `http://localhost:11434/v1`
-   - API 密钥: `ollama` (任意非空值即可)
-   - 模型名称: `qwen2.5:7b`
+- **OpenAI**: `https://api.openai.com/v1`
+- **DeepSeek**: `https://api.deepseek.com`
+- **智谱 GLM**: `https://open.bigmodel.cn/api/paas/v4/`
+- **通义千问**: 参考阿里云文档
+- **其他兼容 OpenAI API 的服务**
 
-#### 选项 C: 使用其他兼容 OpenAI API 规范的服务
-- **DeepSeek**: `https://api.deepseek.com/v1`，模型: `deepseek-chat`
-- **智谱 AI**: `https://open.bigmodel.cn/api/paas/v4/`，模型: `glm-4`
-- **通义千问**: 参考官方文档配置
-- **Moonshot (Kimi)**: `https://api.moonshot.cn/v1`，模型: `moonshot-v1-8k`
-- **本地部署**: vLLM、LM Studio、text-generation-webui 等
-- 任何提供 OpenAI API 规范接口的服务
+#### 本地模型（免费）
 
-### 2. 测试连接
+使用 Ollama 运行本地模型：
 
-点击「🧪 测试连接」确保配置正确
+```bash
+# 安装 Ollama
+curl -fsSL https://ollama.com/install.sh | sh
 
-### 3. 保存配置
+# 下载模型（例如 Qwen）
+ollama pull qwen2.5:7b
 
-点击「💾 保存配置」
+# 启动 Ollama 服务
+ollama serve
+```
 
-## 开始使用
+在 MingDeng 设置中配置：
+- **API Base URL**: `http://localhost:11434/v1`
+- **API Key**: `ollama`（任意值）
+- **模型名称**: `qwen2.5:7b`
 
-### 1. 生成学习计划
+## 使用指南
+
+### 生成学习计划
 
 1. 点击「📋 生成计划」
-2. 输入你要学习的内容，例如:
-   ```
-   我想学习前端开发，需要掌握：
-   - HTML 基础
-   - CSS 样式
-   - JavaScript 编程
-   - React 框架
-   ```
-3. 选择学习模式（交叉学习 or 集中攻坚）
-4. 点击「🚀 生成学习计划」
-5. 查看生成的计划，确认后保存
+2. 在文本框中描述你的学习目标，例如：
 
-### 2. 管理任务
+```
+我想学习 Python 数据分析，需要掌握：
+- NumPy 和 Pandas 基础
+- 数据可视化（Matplotlib, Seaborn）
+- 数据清洗和预处理
+- 简单的统计分析
 
-- 在「🏠 首页」查看每日任务
-- 点击「✅ 完成」标记任务完成
-- 点击「⏭️ 跳过」将任务移到明天
+我每天可以学习 2-3 小时，希望在 3 周内入门。
+```
 
-### 3. 保存学习资源
+3. 选择开始日期
+4. 点击「🤖 生成计划」
+5. 预览生成的计划后，点击「✓ 保存计划」
+
+### 查看今日任务
+
+1. 点击「📅 今日任务」
+2. 查看今天的学习任务
+3. 完成任务后，勾选复选框
+4. 点击「🗑️」可以删除任务
+
+### 使用 AI 助手
+
+1. 点击右下角的「💬」按钮打开聊天窗口
+2. 输入问题，例如：
+   - "如何学习 Python 异步编程？"
+   - "vLLM 和 SGLang 有什么区别？"
+   - "我应该先学哪个？"
+3. AI 会根据你的学习历史提供个性化建议
+
+### 保存学习资源
 
 1. 点击「📚 资源库」
-2. 点击「💾 保存资源」
-3. 输入资源链接或描述
-4. 资源会自动关联到相关任务
+2. 输入资源链接（例如：YouTube 视频、博客文章）
+3. 添加简短描述
+4. 选择资源类型
+5. 点击「➕ 添加资源」
+6. AI 会自动将资源关联到相关任务
 
-### 4. 查看统计
+### 查看学习统计
 
-点击「📊 统计」查看学习进度和成果
+1. 点击「📊 学习统计」
+2. 查看你的：
+   - 总任务数
+   - 已完成任务数
+   - 完成率
+   - 按难度分类的完成情况
 
-## 项目结构
+## 数据备份
 
-```
-mingdeng/
-├── core/                    # 核心业务逻辑
-│   ├── config.py           # 配置管理
-│   ├── storage.py          # 数据存储
-│   ├── ai.py               # AI 调用
-│   ├── todo_manager.py     # 任务管理
-│   ├── library_manager.py  # 资源库管理
-│   └── plan_generator.py   # 计划生成
-├── pages/                   # Streamlit 页面
-│   ├── home.py             # 首页
-│   ├── plan.py             # 计划生成
-│   ├── library.py          # 资源库
-│   ├── stats.py            # 统计
-│   └── config.py           # 配置
-├── data/                    # 数据文件（自动创建）
-│   ├── config.json         # API 配置
-│   ├── todos.json          # 任务数据
-│   ├── library.json        # 资源库数据
-│   └── backups/            # 备份文件
-├── app.py                   # 主入口
-└── requirements.txt         # 依赖列表
-```
+### 自动备份
+
+MingDeng 会在以下情况自动创建备份：
+- 恢复备份前
+- 最多保留 10 个备份
+
+### 手动备份
+
+1. 点击「⚙️ 设置」
+2. 在「数据管理」部分点击「💾 创建备份」
+3. 或点击左侧底部的「💾 创建备份」按钮
+
+### 查看和恢复备份
+
+1. 点击「⚙️ 设置」
+2. 点击「📦 查看备份列表」
+3. 选择要恢复的备份
 
 ## 常见问题
 
-### Q: 如何使用免费的本地模型？
-A: 使用 Ollama + Qwen/Llama 等开源模型，完全免费。也可以用 vLLM、LM Studio 等工具本地部署，只要提供 OpenAI API 规范的接口即可。参考上面的「选项 B」。
+### Q: 启动后提示 "API request failed"
 
-### Q: 数据存储在哪里？
-A: 所有数据存储在 `mingdeng/data/` 目录，不会上传到任何服务器。
+**A**: 请检查：
+1. Python 后端是否正常运行（访问 http://127.0.0.1:8765）
+2. API 配置是否正确（设置页面）
+3. API Key 是否有效
 
-### Q: 如何备份数据？
-A: 直接复制 `data/` 目录。应用也会在重要操作前自动创建备份。
+### Q: 本地模型可以使用吗？
 
-### Q: 遇到错误怎么办？
-A:
-1. 检查 API 配置是否正确
-2. 确保网络连接正常（如果使用云端 API）
-3. 查看终端输出的错误信息
-4. 在 GitHub Issues 中反馈问题
+**A**: 可以！推荐使用 Ollama 运行本地模型，完全免费且隐私安全。参考上面的「本地模型」配置说明。
 
-## 下一步
+### Q: 我的数据存储在哪里？
 
-- 阅读完整的 [README.md](README.md)
-- 探索更多功能
-- 根据需要调整学习计划
-- 享受高效学习！
+**A**: 所有数据存储在项目根目录的 `data/` 文件夹：
+- `data/config.json` - 配置文件（包含 API Key）
+- `data/todos.json` - 学习计划和任务
+- `data/library.json` - 资源库
+- `data/backups/` - 备份文件
+- `data/memory/` - AI 记忆数据（Mem0）
 
-愿 MingDeng 成为你学习路上的一盏明灯 🏮
+### Q: 如何更换 AI 模型？
+
+**A**: 在设置页面修改「模型名称」即可，支持随时切换。
+
+### Q: Mem0 是必需的吗？
+
+**A**: 不是必需的。如果未安装 mem0ai，MingDeng 仍然可以正常工作，但 AI 不会记住你的学习历史。
+
+安装 Mem0：
+
+```bash
+pip install mem0ai
+```
+
+## 开发指南
+
+### 项目结构
+
+```
+mingdeng/
+├── backend/              # Python FastAPI 后端
+│   ├── core/            # 核心模块
+│   ├── main.py          # API 入口
+│   └── requirements.txt
+├── src/                 # 前端
+│   ├── pages/          # 页面 HTML
+│   ├── index.html      # 主页面
+│   ├── main.js         # JavaScript
+│   └── style.css       # 样式
+├── src-tauri/          # Tauri Rust
+│   ├── src/
+│   │   └── main.rs
+│   └── Cargo.toml
+└── data/               # 数据文件（不提交）
+```
+
+### 开发模式运行
+
+```bash
+# 方式 1: 使用 Tauri（推荐）
+npm run dev
+
+# 方式 2: 分别启动
+npm run backend          # 终端 1
+npm run tauri dev        # 终端 2
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+构建产物位于 `src-tauri/target/release/`
+
+## 技术栈
+
+- **桌面应用**: Tauri 2.0（Rust）
+- **前端**: HTML/CSS/JS + Tailwind CSS
+- **后端**: Python FastAPI
+- **AI**: OpenAI-compatible API
+- **记忆**: Mem0 (可选)
+- **存储**: JSON 本地文件
+
+## 贡献
+
+欢迎贡献代码！请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## 许可证
+
+MIT License - 完全开源，自由使用
+
+---
+
+**愿 MingDeng 成为你学习路上的一盏明灯 🏮**

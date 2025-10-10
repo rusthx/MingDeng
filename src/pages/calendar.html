@@ -1,0 +1,94 @@
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                📅 学习日历
+            </h2>
+            <p class="text-gray-600 dark:text-gray-400">查看和管理你的学习计划</p>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="flex gap-2">
+            <button id="view-week" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                周视图
+            </button>
+            <button id="view-month" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400">
+                月视图
+            </button>
+        </div>
+    </div>
+
+    <!-- Calendar Navigation -->
+    <div class="mb-6 flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <button id="prev-period" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300">
+            ← 上一周
+        </button>
+
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="calendar-title">
+            2025年10月 第1周
+        </h3>
+
+        <button id="next-period" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300">
+            下一周 →
+        </button>
+    </div>
+
+    <!-- Week View (Default) -->
+    <div id="week-view" class="grid grid-cols-7 gap-3">
+        <!-- Days will be generated here -->
+    </div>
+
+    <!-- Month View (Hidden by default) -->
+    <div id="month-view" class="hidden">
+        <!-- Month calendar header -->
+        <div class="grid grid-cols-7 gap-2 mb-2">
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周日</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周一</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周二</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周三</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周四</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周五</div>
+            <div class="text-center font-semibold text-gray-700 dark:text-gray-300 py-2">周六</div>
+        </div>
+
+        <!-- Month calendar grid -->
+        <div id="month-grid" class="grid grid-cols-7 gap-2">
+            <!-- Days will be generated here -->
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-6 flex gap-3">
+        <button onclick="navigateToPage('plan')" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+            ➕ 生成学习计划
+        </button>
+        <button id="today-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            📍 回到今天
+        </button>
+    </div>
+</div>
+
+<!-- Task Detail Modal -->
+<div id="day-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white" id="modal-date-title">
+                2025年10月10日
+            </h3>
+            <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl">
+                ✕
+            </button>
+        </div>
+
+        <!-- Tasks for selected day -->
+        <div id="modal-tasks-container" class="space-y-3">
+            <!-- Tasks will be loaded here -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="modal-empty-state" class="hidden text-center py-8 text-gray-500 dark:text-gray-400">
+            这一天没有安排任务
+        </div>
+    </div>
+</div>
