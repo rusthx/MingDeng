@@ -168,6 +168,160 @@ class PlanGenerator:
             "message": "计划已更新"
         }
 
+    async def reschedule_tasks(self, mode: str = "from_today", plan_id: str = None) -> Dict[str, Any]:
+        """
+        Reschedule tasks using AI with memory-based optimization
+
+        Args:
+            mode: Reschedule mode - "from_today" or "include_incomplete"
+            plan_id: Optional specific plan ID to reschedule
+
+        Returns:
+            Rescheduled plan result
+        """
+        from .memory import memory_manager
+
+        # Get all tasks
+        all_tasks = self.todo_manager.get_all_tasks()
+        today = datetime.now().date()
+        today_str = today.isoformat()
+
+        # Filter tasks based on mode
+        if mode == "from_today":
+            # Get tasks from today onwards
+            tasks_to_reschedule = [
+                task for task in all_tasks
+                if task.get("date", "") >= today_str and task.get("status") != "completed"
+            ]
+            mode_description = "从今天开始重新安排任务"
+        elif mode == "include_incomplete":
+            # Get all incomplete tasks (including overdue)
+            tasks_to_reschedule = [
+                task for task in all_tasks
+                if task.get("status") != "completed"
+            ]
+            mode_description = "重新安排所有未完成任务（包括过期任务）"
+        else:
+            return {
+                "success": False,
+                "message": f"不支持的模式: {mode}"
+            }
+
+        if not tasks_to_reschedule:
+            return {
+                "success": False,
+                "message": "没有需要重新安排的任务"
+            }
+
+        # Get user's learning statistics for AI context
+        stats = self.todo_manager.get_stats()
+
+        # Search relevant memories about user's learning pace and preferences
+        memory_context = memory_manager.get_context_for_chat(
+            f"用户的学习速度和完成情况，已完成{stats['completed']}个任务，完成率{stats['completion_rate']}%"
+        )
+
+        # Build AI prompt with memory context
+        prompt = f"""
+你是 MingDeng 学习规划助手。需要根据用户的实际学习进度重新安排任务。
+
+**用户学习统计**：
+- 总任务数：{stats['total_tasks']}
+- 已完成：{stats['completed']}
+- 完成率：{stats['completion_rate']}%
+- 简单任务完成：{stats['by_difficulty']['simple']['completed']}/{stats['by_difficulty']['simple']['total']}
+- 中等任务完成：{stats['by_difficulty']['medium']['completed']}/{stats['by_difficulty']['medium']['total']}
+- 困难任务完成：{stats['by_difficulty']['hard']['completed']}/{stats['by_difficulty']['hard']['total']}
+
+**历史学习记忆**：
+{memory_context}
+
+**重新安排模式**：{mode_description}
+
+**待重新安排的任务**（共{len(tasks_to_reschedule)}个）：
+{self._format_tasks_for_prompt(tasks_to_reschedule)}
+
+**要求**：
+1. 根据用户的完成率和历史表现调整任务安排：
+   - 如果完成率高（>80%），可以适当增加难度或密度
+   - 如果完成率低（<50%），应该降低难度，延长时间，给予更多缓冲
+2. 保持任务的依赖关系和学习顺序
+3. 从今天（{today_str}）开始重新分配日期
+4. 每日总时长控制在 2-4 小时
+5. 合理分散高难度任务
+6. 保留任务的原始ID
+
+输出 JSON 格式：
+{{
+  "plan_name": "重新安排的学习计划",
+  "tasks": [
+    {{
+      "id": "原任务ID",
+      "task": "任务描述",
+      "date": "YYYY-MM-DD",
+      "estimated_time": 分钟数,
+      "difficulty": "simple|medium|hard",
+      "priority": "high|medium|low",
+      "tags": ["标签"],
+      "status": "pending"
+    }}
+  ],
+  "adjustment_reason": "简要说明调整的原因（根据用户的学习速度和完成情况）"
+}}
+
+只返回 JSON，不要其他文字。
+"""
+
+        # Get AI rescheduling
+        try:
+            plan_data = await self.ai_client.generate_plan(prompt)
+
+            # Update tasks in storage
+            rescheduled_tasks = plan_data.get("tasks", [])
+
+            # Update each task
+            for new_task in rescheduled_tasks:
+                task_id = new_task.get("id")
+                if task_id:
+                    # Preserve original task data, only update date and related fields
+                    updates = {
+                        "date": new_task.get("date"),
+                        "estimated_time": new_task.get("estimated_time"),
+                        "difficulty": new_task.get("difficulty"),
+                        "priority": new_task.get("priority"),
+                    }
+                    self.todo_manager.update_task(task_id, updates)
+
+            # Save adjustment reason to memory
+            adjustment_reason = plan_data.get("adjustment_reason", "根据学习进度重新安排了任务")
+            memory_manager.add_message(
+                "system",
+                f"任务重新安排：{adjustment_reason}。重新安排了{len(rescheduled_tasks)}个任务。",
+                metadata={"action": "reschedule", "mode": mode}
+            )
+
+            return {
+                "success": True,
+                "rescheduled_count": len(rescheduled_tasks),
+                "adjustment_reason": adjustment_reason,
+                "message": f"成功重新安排 {len(rescheduled_tasks)} 个任务"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"重新安排失败: {str(e)}"
+            }
+
+    def _format_tasks_for_prompt(self, tasks: list) -> str:
+        """Format tasks for AI prompt"""
+        lines = []
+        for i, task in enumerate(tasks, 1):
+            lines.append(
+                f"{i}. [{task.get('difficulty', 'medium')}] {task.get('task')} "
+                f"({task.get('estimated_time', 60)}分钟) - 原定日期: {task.get('date', 'N/A')}"
+            )
+        return "\n".join(lines)
+
 
 # Global plan generator instance
 plan_generator = PlanGenerator()

@@ -285,6 +285,27 @@ async def generate_plan(plan_gen: PlanGenerate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class RescheduleRequest(BaseModel):
+    mode: str  # "from_today" or "include_incomplete"
+    plan_id: Optional[str] = None
+
+
+@app.post("/api/plan/reschedule")
+async def reschedule_tasks(reschedule_req: RescheduleRequest):
+    """Reschedule tasks using AI with memory-based optimization"""
+    try:
+        if not config_manager.is_configured():
+            raise HTTPException(status_code=400, detail="请先配置 API 密钥")
+
+        result = await plan_generator.reschedule_tasks(
+            mode=reschedule_req.mode,
+            plan_id=reschedule_req.plan_id
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============ Chat Endpoints ============
 
 @app.post("/api/chat")

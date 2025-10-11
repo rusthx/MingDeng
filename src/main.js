@@ -311,11 +311,29 @@ async function saveNewTask() {
 // ============ Plan Page ============
 
 async function initPlanPage() {
-    // Set today as default start date
+    // Restore saved input from sessionStorage
+    const savedGoals = sessionStorage.getItem('plan-learning-goals');
+    const savedDate = sessionStorage.getItem('plan-start-date');
+
+    const learningGoalsInput = document.getElementById('learning-goals');
     const startDateInput = document.getElementById('start-date');
-    if (startDateInput) {
-        startDateInput.value = new Date().toISOString().split('T')[0];
+
+    if (learningGoalsInput && savedGoals) {
+        learningGoalsInput.value = savedGoals;
     }
+
+    if (startDateInput) {
+        startDateInput.value = savedDate || new Date().toISOString().split('T')[0];
+    }
+
+    // Auto-save input to sessionStorage
+    learningGoalsInput?.addEventListener('input', (e) => {
+        sessionStorage.setItem('plan-learning-goals', e.target.value);
+    });
+
+    startDateInput?.addEventListener('change', (e) => {
+        sessionStorage.setItem('plan-start-date', e.target.value);
+    });
 
     // Load existing plans
     await loadExistingPlans();
@@ -401,6 +419,10 @@ async function savePlan() {
     document.getElementById('plan-preview').classList.add('hidden');
     document.getElementById('learning-goals').value = '';
     currentPlan = null;
+
+    // Clear saved input from sessionStorage
+    sessionStorage.removeItem('plan-learning-goals');
+    sessionStorage.removeItem('plan-start-date');
 
     await loadExistingPlans();
 }
@@ -686,8 +708,25 @@ async function deleteResource(resourceId) {
 // ============ Calendar Page ============
 
 async function initCalendarPage() {
+    // Restore saved view preference
+    const savedView = sessionStorage.getItem('calendar-view');
+    if (savedView === 'week' || savedView === 'month') {
+        calendarView = savedView;
+    } else {
+        // Default to week view
+        calendarView = 'week';
+    }
+
     currentDate = new Date();
+
+    // Load tasks first
     await loadAllPlansTasks();
+
+    // Initialize view buttons and containers with correct state
+    // This must happen before renderCalendar
+    initializeViewButtons();
+
+    // Render calendar after view is properly set up
     renderCalendar();
 
     // Event listeners
@@ -700,6 +739,49 @@ async function initCalendarPage() {
         renderCalendar();
     });
     document.getElementById('close-modal')?.addEventListener('click', closeDayModal);
+    document.getElementById('reschedule-btn')?.addEventListener('click', openRescheduleModal);
+    document.getElementById('close-reschedule-modal')?.addEventListener('click', closeRescheduleModal);
+    document.getElementById('reschedule-from-today')?.addEventListener('click', () => rescheduleTasksWithMode('from_today'));
+    document.getElementById('reschedule-include-incomplete')?.addEventListener('click', () => rescheduleTasksWithMode('include_incomplete'));
+}
+
+function initializeViewButtons() {
+    const weekBtn = document.getElementById('view-week');
+    const monthBtn = document.getElementById('view-month');
+    const weekView = document.getElementById('week-view');
+    const monthView = document.getElementById('month-view');
+
+    // Ensure all elements exist before proceeding
+    if (!weekBtn || !monthBtn || !weekView || !monthView) {
+        console.error('Calendar view elements not found');
+        return;
+    }
+
+    if (calendarView === 'week') {
+        // Week button active
+        weekBtn.classList.add('bg-blue-500', 'text-white');
+        weekBtn.classList.remove('bg-gray-300', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+        // Month button inactive
+        monthBtn.classList.remove('bg-blue-500', 'text-white');
+        monthBtn.classList.add('bg-gray-300', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+        // Show week view, hide month view
+        weekView.classList.remove('hidden');
+        monthView.classList.add('hidden');
+    } else {
+        // Month button active
+        monthBtn.classList.add('bg-blue-500', 'text-white');
+        monthBtn.classList.remove('bg-gray-300', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+        // Week button inactive
+        weekBtn.classList.remove('bg-blue-500', 'text-white');
+        weekBtn.classList.add('bg-gray-300', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+        // Show month view, hide week view
+        monthView.classList.remove('hidden');
+        weekView.classList.add('hidden');
+    }
 }
 
 async function loadAllPlansTasks() {
@@ -725,6 +807,9 @@ async function loadAllPlansTasks() {
 
 function switchView(view) {
     calendarView = view;
+
+    // Save view preference
+    sessionStorage.setItem('calendar-view', view);
 
     const weekBtn = document.getElementById('view-week');
     const monthBtn = document.getElementById('view-month');
@@ -770,21 +855,26 @@ function renderCalendar() {
 
 function updateCalendarTitle() {
     const title = document.getElementById('calendar-title');
+    const prevBtn = document.getElementById('prev-period');
+    const nextBtn = document.getElementById('next-period');
+
+    if (!title || !prevBtn || !nextBtn) {
+        console.error('Calendar navigation elements not found');
+        return;
+    }
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
 
     if (calendarView === 'week') {
         const weekNum = getWeekNumber(currentDate);
         title.textContent = `${year}年${month}月 第${weekNum}周`;
-
-        // Update button text
-        document.getElementById('prev-period').textContent = '← 上一周';
-        document.getElementById('next-period').textContent = '下一周 →';
+        prevBtn.textContent = '← 上一周';
+        nextBtn.textContent = '下一周 →';
     } else {
         title.textContent = `${year}年${month}月`;
-
-        document.getElementById('prev-period').textContent = '← 上个月';
-        document.getElementById('next-period').textContent = '下个月 →';
+        prevBtn.textContent = '← 上个月';
+        nextBtn.textContent = '下个月 →';
     }
 }
 
@@ -796,6 +886,11 @@ function getWeekNumber(date) {
 
 function renderWeekView() {
     const container = document.getElementById('week-view');
+    if (!container) {
+        console.error('Week view container not found');
+        return;
+    }
+
     const startOfWeek = getStartOfWeek(currentDate);
 
     let html = '';
@@ -828,11 +923,15 @@ function renderWeekView() {
 
 function renderMonthView() {
     const container = document.getElementById('month-grid');
+    if (!container) {
+        console.error('Month view container not found');
+        return;
+    }
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -973,6 +1072,48 @@ async function toggleTaskFromModal(taskId, isCompleted) {
 
 function closeDayModal() {
     document.getElementById('day-detail-modal').classList.add('hidden');
+}
+
+function openRescheduleModal() {
+    document.getElementById('reschedule-modal').classList.remove('hidden');
+}
+
+function closeRescheduleModal() {
+    document.getElementById('reschedule-modal').classList.add('hidden');
+}
+
+async function rescheduleTasksWithMode(mode) {
+    // Close modal
+    closeRescheduleModal();
+
+    // Show loading
+    const loadingEl = document.getElementById('reschedule-loading');
+    loadingEl.classList.remove('hidden');
+
+    try {
+        const result = await apiCall('/api/plan/reschedule', 'POST', { mode });
+
+        if (result.success) {
+            showToast(`✓ ${result.message}`, 'success');
+
+            // Show adjustment reason if available
+            if (result.adjustment_reason) {
+                setTimeout(() => {
+                    showToast(`AI建议: ${result.adjustment_reason}`, 'info');
+                }, 1500);
+            }
+
+            // Reload calendar
+            await loadAllPlansTasks();
+            renderCalendar();
+        } else {
+            showToast(result.message || '重排失败', 'error');
+        }
+    } catch (error) {
+        // Error already shown by apiCall
+    } finally {
+        loadingEl.classList.add('hidden');
+    }
 }
 
 // ============ Chat Widget ============

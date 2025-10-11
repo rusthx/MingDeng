@@ -66,6 +66,9 @@
         <button id="today-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
             📍 回到今天
         </button>
+        <button id="reschedule-btn" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+            🔄 AI重新排序
+        </button>
     </div>
 </div>
 
@@ -90,5 +93,57 @@
         <div id="modal-empty-state" class="hidden text-center py-8 text-gray-500 dark:text-gray-400">
             这一天没有安排任务
         </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div id="reschedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                🔄 AI重新排序任务
+            </h3>
+            <button id="close-reschedule-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl">
+                ✕
+            </button>
+        </div>
+
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+            AI会根据你的学习速度和完成情况，智能调整任务安排
+        </p>
+
+        <!-- Reschedule Options -->
+        <div class="space-y-3 mb-6">
+            <button id="reschedule-from-today" class="w-full text-left p-4 bg-blue-50 dark:bg-blue-900 border-2 border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                <div class="font-semibold text-gray-900 dark:text-white mb-1">
+                    📅 从今天开始重排
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    重新安排今天及之后的所有未完成任务
+                </div>
+            </button>
+
+            <button id="reschedule-include-incomplete" class="w-full text-left p-4 bg-purple-50 dark:bg-purple-900 border-2 border-purple-200 dark:border-purple-700 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-800 transition">
+                <div class="font-semibold text-gray-900 dark:text-white mb-1">
+                    🔁 包含过期任务重排
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    将所有未完成的任务（包括过期任务）重新安排
+                </div>
+            </button>
+        </div>
+
+        <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded p-3">
+            💡 提示：AI会根据你的完成率自动调整任务密度和难度
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Loading -->
+<div id="reschedule-loading" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+        <div class="animate-spin text-6xl mb-4">🔄</div>
+        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">AI 正在重新安排你的任务...</h3>
+        <p class="text-gray-500 dark:text-gray-400">这可能需要几秒钟</p>
     </div>
 </div>
