@@ -4,10 +4,10 @@ Handles loading and saving user configuration
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
+from .paths import get_data_dir
 
 
 class APIConfig(BaseModel):
@@ -32,8 +32,9 @@ class Config(BaseModel):
 class ConfigManager:
     """Configuration Manager"""
 
-    def __init__(self, config_path: str = "data/config.json"):
-        self.config_path = Path(config_path)
+    def __init__(self, config_path: Optional[str] = None):
+        data_dir = get_data_dir()
+        self.config_path = Path(config_path) if config_path else data_dir / "config.json"
         self.config: Config = self._load_config()
 
     def _ensure_data_dir(self):

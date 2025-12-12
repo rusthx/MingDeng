@@ -5,6 +5,7 @@ Handles Mem0 integration for AI memory system
 
 from typing import List, Dict, Any, Optional
 from .config import config_manager
+from .paths import get_data_dir
 
 # Mem0 integration (optional, gracefully handle if not available)
 try:
@@ -53,7 +54,7 @@ class MemoryManager:
                     "provider": "qdrant",
                     "config": {
                         "collection_name": "mingdeng_memory",
-                        "path": "data/memory/qdrant"
+                        "path": str(get_data_dir() / "memory" / "qdrant")
                     }
                 }
             }

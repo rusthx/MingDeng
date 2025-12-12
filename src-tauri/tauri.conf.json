@@ -1,39 +1,15 @@
 {
+  "productName": "MingDeng",
+  "version": "0.1.0",
+  "identifier": "com.mingdeng",
   "build": {
-    "beforeDevCommand": "",
-    "beforeBuildCommand": "",
-    "devPath": "../src",
-    "distDir": "../src"
+    "beforeDevCommand": "cd src && python3 -m http.server 1420 --bind 127.0.0.1",
+    "beforeBuildCommand": "python3 -m venv backend-venv && backend-venv/bin/pip install -r backend/requirements.txt",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../src"
   },
-  "package": {
-    "productName": "MingDeng",
-    "version": "0.1.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "http": {
-        "all": true,
-        "request": true,
-        "scope": ["http://localhost:8765/**", "http://127.0.0.1:8765/**"]
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "com.mingdeng.app",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
+  "app": {
+    "withGlobalTauri": true,
     "security": {
       "csp": null
     },
@@ -47,10 +23,17 @@
         "minWidth": 800,
         "minHeight": 600
       }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png"
     ],
-    "systemTray": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    }
+    "resources": [
+      "../backend",
+      "../backend-venv"
+    ]
   }
 }

@@ -8,6 +8,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from .paths import get_data_dir
 
 
 class BackupManager:
@@ -15,9 +16,10 @@ class BackupManager:
 
     MAX_BACKUPS = 10  # Maximum number of backups to keep
 
-    def __init__(self, data_dir: str = "data", backup_dir: str = "data/backups"):
-        self.data_dir = Path(data_dir)
-        self.backup_dir = Path(backup_dir)
+    def __init__(self, data_dir: Optional[str] = None, backup_dir: Optional[str] = None):
+        base_dir = Path(data_dir) if data_dir else get_data_dir()
+        self.data_dir = base_dir
+        self.backup_dir = Path(backup_dir) if backup_dir else base_dir / "backups"
         self.backup_dir.mkdir(parents=True, exist_ok=True)
 
     def create_backup(self, reason: str = "Manual backup") -> Dict[str, Any]:

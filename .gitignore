@@ -26,6 +26,7 @@ env/
 ENV/
 .venv
 .claude/
+backend-venv/
 # IDE
 .vscode/
 .idea/
@@ -54,3 +55,4 @@ htmlcov/
 *.tmp
 *.bak
 data/
+src-tauri/target/
