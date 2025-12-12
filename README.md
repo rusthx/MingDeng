@@ -6,6 +6,15 @@
 
 ------
 
+## 快速开始（按平台选择命令）
+
+- Web 开发（macOS/Linux）：`./run_dev.sh`（一键启动后端 + 前端 http://localhost:8000）
+- Web 开发（Windows）：`run_dev.bat`
+- 桌面版（macOS/Linux 打包）：`./build_desktop.sh`（生成安装包，位于 src-tauri/target/release/bundle/）
+- 桌面版（Windows 打包）：`build_desktop.bat`
+
+----
+
 ## 项目愿景
 
 **无论你是在学习编程、准备考研、学习英语，还是培养任何新技能，MingDeng 都能帮你：**
