@@ -29,7 +29,7 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/icon.png"
+      "icons/icon_128.png"
     ],
     "resources": [
       "../backend",
