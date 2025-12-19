@@ -6,6 +6,15 @@
 
 ------
 
+## 快速开始（按平台选择命令）
+
+- Web 开发（macOS/Linux）：`./run_dev.sh`（一键启动后端 + 前端 http://localhost:8000）
+- Web 开发（Windows）：`run_dev.bat`
+- 桌面版（macOS/Linux 打包）：`./build_desktop.sh`（生成安装包，位于 src-tauri/target/release/bundle/）
+- 桌面版（Windows 打包）：`build_desktop.bat`
+
+----
+
 ## 项目愿景
 
 **无论你是在学习编程、准备考研、学习英语，还是培养任何新技能，MingDeng 都能帮你：**
@@ -231,6 +240,21 @@ Storage:  JSON files (local)
 - **极简 UI**：少即是多，每个页面只做一件事
 - **快速响应**：所有操作 < 100ms 反馈
 - **键盘优先**：所有功能都有快捷键
+
+### 如何使用（Web 与桌面）
+
+- **Web 开发模式**：`cd backend && pip install -r requirements.txt`，`cd .. && npm install`；启动后端 `npm run backend`；启动前端 `cd src && python3 -m http.server 8000`，浏览器访问 `http://localhost:8000`。可用 `run_dev.sh` / `run_dev.bat` 一键拉起。
+- **桌面调试（Tauri Dev）**：仓库根运行 `npm run tauri dev`，Tauri 会自动起本地静态服并启动 Python 后端。
+- **桌面打包**：macOS/Linux 执行 `./build_desktop.sh`，Windows 运行 `build_desktop.bat`；产物位于 `src-tauri/target/release/bundle/`，双击安装/运行，无需手动启动后端。
+
+### 桌面版运行时的后端和数据
+
+- 后端何时启动：每次打开桌面应用时自动拉起内置的 Python 后端，关闭窗口后后端随即退出，不会后台常驻。
+- 内置 Python 环境：打包时会把项目根的 `backend-venv/` 一起放进安装包，运行时优先使用它（如设置了 `MINGDENG_PYTHON` 则用你指定的解释器）。
+- 数据存储位置：桌面版会把 `config.json`、`todos.json`、`library.json`、备份、记忆等文件写到系统的应用数据目录，而不是源码目录。
+  - macOS: `~/Library/Application Support/com.mingdeng`
+  - Windows: `%AppData%\\com.mingdeng`
+  - Linux: `~/.local/share/com.mingdeng`
 
 ### 项目结构
 

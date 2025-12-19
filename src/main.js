@@ -1,6 +1,6 @@
 // MingDeng Frontend JavaScript
-// API Base URL
-const API_BASE = 'http://127.0.0.1:8765';
+// API Base URL (overwritten when running inside Tauri)
+let API_BASE = 'http://127.0.0.1:8765';
 
 // Global state
 let currentPage = 'calendar';
@@ -30,6 +30,23 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 3000);
+}
+
+async function initializeApiBase() {
+    // Allow Tauri to provide a dynamic local backend origin; fallback to dev default.
+    const tauriInvoke = window.__TAURI__?.core?.invoke;
+    if (tauriInvoke) {
+        try {
+            const origin = await tauriInvoke('ensure_backend');
+            if (origin) {
+                API_BASE = origin;
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to start backend via Tauri:', error);
+            showToast('无法启动本地后端，请检查 Python 环境', 'error');
+        }
+    }
 }
 
 async function apiCall(endpoint, method = 'GET', body = null) {
@@ -1187,7 +1204,9 @@ async function sendChatMessage() {
 
 // ============ Initialization ============
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeApiBase();
+
     // Setup navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {

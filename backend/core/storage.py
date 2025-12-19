@@ -4,10 +4,10 @@ Handles JSON file operations for todos and library
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from .paths import get_data_dir
 
 
 class Storage:
@@ -58,8 +58,9 @@ class Storage:
 class TodoStorage(Storage):
     """Todo storage handler"""
 
-    def __init__(self, file_path: str = "data/todos.json"):
-        super().__init__(file_path)
+    def __init__(self, file_path: Optional[str] = None):
+        data_dir = get_data_dir()
+        super().__init__(file_path or data_dir / "todos.json")
 
     def _get_default_data(self) -> Dict[str, Any]:
         """Get default todos structure"""
@@ -127,8 +128,9 @@ class TodoStorage(Storage):
 class LibraryStorage(Storage):
     """Library storage handler"""
 
-    def __init__(self, file_path: str = "data/library.json"):
-        super().__init__(file_path)
+    def __init__(self, file_path: Optional[str] = None):
+        data_dir = get_data_dir()
+        super().__init__(file_path or data_dir / "library.json")
 
     def _get_default_data(self) -> Dict[str, Any]:
         """Get default library structure"""
