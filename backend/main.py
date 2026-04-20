@@ -6,8 +6,8 @@ FastAPI server for MingDeng learning assistant
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
+from typing import Optional, List
 import uvicorn
 
 from core.config import config_manager

@@ -5,7 +5,7 @@ Handles loading and saving user configuration
 
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 from pydantic import BaseModel, Field
 from .paths import get_data_dir
 

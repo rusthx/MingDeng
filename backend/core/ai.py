@@ -211,7 +211,7 @@ class AIClient:
                 json_str = response.strip()
 
             return json.loads(json_str)
-        except Exception as e:
+        except Exception:
             return {"linked_task_id": None, "reason": "无法自动关联"}
 
 

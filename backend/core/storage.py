@@ -6,7 +6,6 @@ Handles JSON file operations for todos and library
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime
 from .paths import get_data_dir
 
 
