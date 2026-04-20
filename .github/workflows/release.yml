@@ -1,0 +1,103 @@
+name: Publish Release
+# push到main分支且打了tag，自动发布release包
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+      
+
+# 双保险：即使被错误触发，只要没有 v 开头的 tag 就直接跳过，避免红色失败状态
+jobs:
+  check-version:
+    name: Check Version Consistency
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Extract version from Tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Check package.json
+        run: |
+          PKG_VER=$(jq -r .version package.json)
+          if [ "$PKG_VER" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::package.json version ($PKG_VER) does not match tag version (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+          
+      - name: Check Cargo.toml
+        run: |
+          CARGO_VER=$(grep -m1 '^version' src-tauri/Cargo.toml | awk -F '"' '{print $2}')
+          if [ "$CARGO_VER" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::Cargo.toml version ($CARGO_VER) does not match tag version (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+          
+      - name: Check tauri.conf.json
+        run: |
+          TAURI_VER=$(jq -r .version src-tauri/tauri.conf.json)
+          if [ "$TAURI_VER" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::tauri.conf.json version ($TAURI_VER) does not match tag version (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+
+  release:
+    name: Build and Release
+    needs: check-version
+    if: startsWith(github.ref, 'refs/tags/v') # 双保险
+    strategy:
+      fail-fast: false # 某个平台失败不影响其他平台继续打包
+      matrix:
+        include:
+          - platform: macos-latest
+            args: '--target universal-apple-darwin' # 打包支持 Intel 和 M 芯片的通用包
+          - platform: ubuntu-24.04
+            args: ''
+          - platform: windows-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # macOS 需要添加这两个 target 才能打出 universal 包
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build and Release with Tauri Action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 如果以后要开启应用的自动更新功能，需要在 GitHub Settings > Secrets 里配置这两个变量，否则可以注释掉
+          # TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          # TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'MingDeng v__VERSION__'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: true # 先生成草稿，去 GitHub 网页上检查无误后再点 Publish 发布
+          prerelease: false
+          args: ${{ matrix.args }}
