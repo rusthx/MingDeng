@@ -120,7 +120,6 @@ fn resolve_python(backend_dir: &Path) -> Result<PathBuf, String> {
                 .join("Scripts")
                 .join("python.exe"),
         );
-
     }
 
     for path in candidates {
