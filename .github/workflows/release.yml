@@ -93,10 +93,11 @@ jobs:
           fi
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@v1
         with:
           # macOS 需要添加这两个 target 才能打出 universal 包
-          targets: aarch64-apple-apple-darwin,x86_64-apple-darwin
+          toolchain: stable
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-24.04'
