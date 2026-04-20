@@ -26,10 +26,11 @@ impl BackendState {
     }
 
     fn origin(&self) -> Option<String> {
-        self.0
-            .lock()
-            .ok()
-            .and_then(|guard| guard.as_ref().map(|backend| format!("http://127.0.0.1:{}", backend.port)))
+        self.0.lock().ok().and_then(|guard| {
+            guard
+                .as_ref()
+                .map(|backend| format!("http://127.0.0.1:{}", backend.port))
+        })
     }
 
     fn shutdown(&self) {
@@ -113,7 +114,13 @@ fn resolve_python(backend_dir: &Path) -> Result<PathBuf, String> {
     let mut candidates = Vec::new();
     if let Some(parent) = backend_dir.parent() {
         candidates.push(parent.join("backend-venv").join("bin").join("python"));
-        candidates.push(parent.join("backend-venv").join("Scripts").join("python.exe"));
+        candidates.push(
+            parent
+                .join("backend-venv")
+                .join("Scripts")
+                .join("python.exe"),
+        );
+
     }
 
     for path in candidates {
