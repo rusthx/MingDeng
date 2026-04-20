@@ -4,7 +4,7 @@
   "identifier": "com.mingdeng",
   "build": {
     "beforeDevCommand": "cd src && python3 -m http.server 1420 --bind 127.0.0.1",
-    "beforeBuildCommand": "python3 -m venv backend-venv && backend-venv/bin/pip install -r backend/requirements.txt",
+    "beforeBuildCommand":"",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../src"
   },

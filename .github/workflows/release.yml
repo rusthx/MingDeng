@@ -9,6 +9,9 @@ on:
       - 'v*'
       
   workflow_dispatch:
+    
+permissions:
+  contents: write
 
 # 双保险：即使被错误触发，只要没有 v 开头的 tag 就直接跳过，避免红色失败状态
 jobs:
