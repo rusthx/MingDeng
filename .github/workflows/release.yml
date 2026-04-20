@@ -51,8 +51,8 @@ jobs:
 
   release:
     name: Build and Release
-    needs: check-version
-    if: startsWith(github.ref, 'refs/tags/v') # 双保险
+    # needs: check-version
+    # if: startsWith(github.ref, 'refs/tags/v') # 双保险
     strategy:
       fail-fast: false # 某个平台失败不影响其他平台继续打包
       matrix:
