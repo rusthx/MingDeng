@@ -62,7 +62,7 @@ class PlanGenerator:
         """
         try:
             base_date = datetime.fromisoformat(start_date).date()
-        except:
+        except Exception:
             base_date = datetime.now().date()
 
         tasks = plan_data.get("tasks", [])
@@ -79,7 +79,7 @@ class PlanGenerator:
                         task_date = datetime.fromisoformat(task["date"]).date()
                         new_date = task_date + timedelta(days=offset)
                         task["date"] = new_date.isoformat()
-            except:
+            except Exception:
                 # If date parsing fails, use sequential dates
                 self._assign_sequential_dates(tasks, base_date)
         else:
