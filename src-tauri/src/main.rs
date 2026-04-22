@@ -6,9 +6,11 @@ use portpicker::pick_unused_port;
 use std::os::windows::process::CommandExt;
 use std::{
     env,
+    io::{BufRead, Write},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
+    thread,
     time::Duration,
 };
 
@@ -85,8 +87,8 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     let mut cmd = Command::new(&python);
     cmd.current_dir(&backend_dir);
     cmd.env("MINGDENG_DATA_DIR", &data_dir);
-    cmd.env("PYTHONUNBUFFERED", "1");
     cmd.args([
+        "-u",
         "-m",
         "uvicorn",
         "main:app",
@@ -94,11 +96,11 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         "0.0.0.0",
         "--port",
         &port.to_string(),
+        "--log-level",
+        "info",
     ]);
-    cmd.stdout(Stdio::from(
-        log_file.try_clone().map_err(|e| e.to_string())?,
-    ));
-    cmd.stderr(Stdio::from(log_file));
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
 
     // Windows: 隐藏 Python 进程的控制台窗口
     #[cfg(windows)]
@@ -108,38 +110,77 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;
 
+    // 后台线程读取 stdout/stderr 写入日志，避免 Windows 上文件重定向导致子进程阻塞
+    let log_path_stdout = log_path.clone();
+    if let Some(stdout) = child.stdout.take() {
+        thread::spawn(move || {
+            let reader = std::io::BufReader::new(stdout);
+            let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(&log_path_stdout) {
+                Ok(f) => f,
+                Err(e) => {
+                    eprintln!("[Backend] Failed to open log for stdout: {}", e);
+                    return;
+                }
+            };
+            for line in reader.lines() {
+                if let Ok(l) = line {
+                    let _ = writeln!(file, "{}", l);
+                    let _ = file.flush();
+                }
+            }
+        });
+    }
+    let log_path_stderr = log_path.clone();
+    if let Some(stderr) = child.stderr.take() {
+        thread::spawn(move || {
+            let reader = std::io::BufReader::new(stderr);
+            let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(&log_path_stderr) {
+                Ok(f) => f,
+                Err(e) => {
+                    eprintln!("[Backend] Failed to open log for stderr: {}", e);
+                    return;
+                }
+            };
+            for line in reader.lines() {
+                if let Ok(l) = line {
+                    let _ = writeln!(file, "{}", l);
+                    let _ = file.flush();
+                }
+            }
+        });
+    }
+
+    // 使用短超时客户端进行健康检查，避免单次请求卡住
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(2))
+        .build()
+        .map_err(|e| e.to_string())?;
+
     // 轮询健康检查，最多等待 15 秒
-    tokio::time::sleep(Duration::from_millis(300)).await;
+    tokio::time::sleep(Duration::from_millis(500)).await;
     let origin = format!("http://127.0.0.1:{port}");
-    for _ in 0..294 {
+    for _ in 0..290 {
         tokio::time::sleep(Duration::from_millis(50)).await;
 
         // 检查子进程是否提前退出
         match child.try_wait() {
             Ok(Some(status)) => {
+                // 给后台线程一点时间写入日志
+                thread::sleep(Duration::from_millis(200));
                 let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
-                let recent_logs = log_content
-                    .lines()
-                    .rev()
-                    .take(20)
-                    .collect::<Vec<_>>()
-                    .join("\n");
+                let recent_logs = log_content.lines().rev().take(20).collect::<Vec<_>>().join("\n");
                 return Err(format!(
                     "Python backend exited early with code: {:?}\nLog: {}\nRecent logs:\n{}",
                     status.code(),
                     log_path.to_string_lossy(),
-                    if recent_logs.is_empty() {
-                        "(empty)"
-                    } else {
-                        &recent_logs
-                    }
+                    if recent_logs.is_empty() { "(empty)" } else { &recent_logs }
                 ));
             }
             Err(e) => return Err(format!("Failed to check child status: {e}")),
             Ok(None) => {}
         }
 
-        if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
+        if let Ok(resp) = client.get(format!("{}/", origin)).send().await {
             if resp.status().is_success() {
                 state.set(child, port);
                 return Ok(origin);
@@ -149,21 +190,14 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
 
     // 健康检查失败，读取日志并返回详细信息
     let _ = child.kill();
+    // 给后台线程一点时间写入日志
+    thread::sleep(Duration::from_millis(500));
     let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
-    let recent_logs = log_content
-        .lines()
-        .rev()
-        .take(20)
-        .collect::<Vec<_>>()
-        .join("\n");
+    let recent_logs = log_content.lines().rev().take(20).collect::<Vec<_>>().join("\n");
     Err(format!(
         "Python backend did not respond within 15 seconds.\nLog: {}\nRecent logs:\n{}",
         log_path.to_string_lossy(),
-        if recent_logs.is_empty() {
-            "(empty or unreadable)"
-        } else {
-            &recent_logs
-        }
+        if recent_logs.is_empty() { "(empty or unreadable)" } else { &recent_logs }
     ))
 }
 
