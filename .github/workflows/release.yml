@@ -22,7 +22,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4 # 修正：v6 不存在，改为 v4
+      - uses: actions/checkout@v6
       
       - name: Extract version from Tag
         id: version
@@ -89,7 +89,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: bash
         run: |
-          PYTHON_VERSION="3.11.9"
+          PYTHON_VERSION="3.9"
           EMBED_DIR="backend-runtime"
 
           echo "=== 下载 Python 嵌入式发行版 ==="
@@ -98,7 +98,7 @@ jobs:
 
           echo "=== 解压 ==="
           mkdir -p "$EMBED_DIR"
-          tar -xf python-embed.zip -C "$EMBED_DIR"
+          powershell -Command "Expand-Archive -Path python-embed.zip -DestinationPath $EMBED_DIR -Force"
           rm python-embed.zip
 
           echo "=== 启用 site-packages ==="
