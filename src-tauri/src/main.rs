@@ -108,12 +108,37 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;
 
-    // 轮询健康检查，最多等待 10 秒
-    // 先给 Python 一点初始化时间，再高频轮询
+    // 轮询健康检查，最多等待 15 秒
     tokio::time::sleep(Duration::from_millis(300)).await;
     let origin = format!("http://127.0.0.1:{port}");
-    for _ in 0..194 {
+    for _ in 0..294 {
         tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // 检查子进程是否提前退出
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
+                let recent_logs = log_content
+                    .lines()
+                    .rev()
+                    .take(20)
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                return Err(format!(
+                    "Python backend exited early with code: {:?}\nLog: {}\nRecent logs:\n{}",
+                    status.code(),
+                    log_path.to_string_lossy(),
+                    if recent_logs.is_empty() {
+                        "(empty)"
+                    } else {
+                        &recent_logs
+                    }
+                ));
+            }
+            Err(e) => return Err(format!("Failed to check child status: {e}")),
+            Ok(None) => {}
+        }
+
         if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
             if resp.status().is_success() {
                 state.set(child, port);
@@ -132,7 +157,7 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         .collect::<Vec<_>>()
         .join("\n");
     Err(format!(
-        "Python backend did not respond within 10 seconds.\nLog: {}\nRecent logs:\n{}",
+        "Python backend did not respond within 15 seconds.\nLog: {}\nRecent logs:\n{}",
         log_path.to_string_lossy(),
         if recent_logs.is_empty() {
             "(empty or unreadable)"
