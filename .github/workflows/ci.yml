@@ -2,64 +2,54 @@ name: CI (PR Check)
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   # ----------------- Python 后端检查 -----------------
   lint-python:
-    name: Python后端代码格式检查
+    name: Python后端代码检查
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.9'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff mypy
-          pip install -r backend/requirements.txt
-      - name: Run Ruff (Lint & Format)
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install lint tools
+        run: pip install ruff mypy
+
+      - name: Run Ruff
         working-directory: ./backend
         run: ruff check .
-      - name: Run Mypy (Type Check)
-        working-directory: ./backend
-        run: mypy . || true 
 
-#   test-python:
-#     name: Test Python Backend
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v6
-#       - uses: actions/setup-python@v6
-#         with:
-#           python-version: '3.9'
-#       - name: Install dependencies
-#         run: |
-#           python -m pip install --upgrade pip
-#           pip install -r backend/requirements.txt
-#           pip install pytest httpx
-#       - name: Run Pytest
-#         working-directory: ./backend
-#         run: pytest tests/ -v
+      - name: Run Mypy
+        working-directory: ./backend
+        run: mypy . || true
 
   # ----------------- Rust (Tauri 核心) 检查 -----------------
   check-rust:
-    name: rust代码审查
+    name: Rust代码审查
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
 
+      # 先跑格式检查，失败时不用装系统依赖即可快速退出
       - name: Create dummy backend-venv for build check
         run: mkdir -p backend-venv
 
@@ -67,31 +57,11 @@ jobs:
         working-directory: ./src-tauri
         run: cargo fmt --check
 
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
       - name: Run Clippy
         working-directory: ./src-tauri
         run: cargo clippy -- -D warnings
-
-  # ----------------- 前端与整体构建冒烟测试 -----------------
-  # 注：Tauri 完整编译较慢，如果在 PR 中觉得太慢，可以把此 Job 删除，
-  # 仅保留上面的 Lint 和 Test，把构建检查放到 Release 前的 main 分支 push 中。
-#   build-smoke-test:
-#     name: Build Smoke Test (Linux)
-#     runs-on: ubuntu-22.04 # 必须用 22.04，24.04 缺少部分 Tauri 依赖
-#     needs: [check-rust]
-#     steps:
-#       - uses: actions/checkout@v6
-#       - uses: actions/setup-node@v6
-#         with:
-#           node-version: '20'
-#       - uses: dtolnay/rust-toolchain@stable
-      
-#       - name: Install system dependencies (Linux)
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      
-#       - name: Install frontend dependencies
-#         run: npm install
-      
-#       - name: Build Tauri App (Check if it compiles)
-#         run: npm run tauri build

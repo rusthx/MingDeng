@@ -27,14 +27,21 @@ class MemoryManager:
     def _initialize_memory(self):
         """Initialize Mem0 memory"""
         if not MEM0_AVAILABLE:
-            print("Mem0 not available, using fallback memory")
+            print("[Memory] mem0ai 未安装，AI 记忆功能不可用")
             return
 
         config = config_manager.get_config()
 
+        # 提前检查配置，给出更友好的提示
+        if not config.api.api_key:
+            print("[Memory] AI 记忆功能未启用：请在「设置」页面配置 API 密钥后重启应用")
+            return
+        if not config.api.base_url:
+            print("[Memory] AI 记忆功能未启用：请在「设置」页面配置 API Base URL")
+            return
+
         try:
             # Initialize Mem0 with OpenAI-compatible config
-            # Note: Adjust config based on mem0ai version
             mem_config = {
                 "llm": {
                     "provider": "openai",
@@ -60,9 +67,10 @@ class MemoryManager:
             }
 
             self.memory = Memory.from_config(mem_config)
+            print("[Memory] AI 记忆功能已启用")
         except Exception as e:
-            print(f"Error initializing Mem0: {e}")
-            print("Memory features will be limited. To enable full memory, ensure Mem0 is properly configured.")
+            print(f"[Memory] AI 记忆初始化失败: {e}")
+            print("[Memory] 应用仍可正常使用，但 AI 对话将不会保留历史记忆")
             self.memory = None
 
     def add_message(self, role: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
