@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -21,9 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Extract version from Tag
+      - name: Extract version from Tag or package.json
         id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check package.json
         run: |
