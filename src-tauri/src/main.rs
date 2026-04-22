@@ -108,9 +108,9 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;
 
-    // 轮询健康检查，最多等待 5 秒
+    // 轮询健康检查，最多等待 10 秒（嵌入式 Python 首次启动可能较慢）
     let origin = format!("http://127.0.0.1:{port}");
-    for _ in 0..50 {
+    for _ in 0..100 {
         tokio::time::sleep(Duration::from_millis(100)).await;
         if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
             if resp.status().is_success() {
@@ -120,11 +120,14 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         }
     }
 
-    // 健康检查失败，终止进程并返回详细错误
+    // 健康检查失败，读取日志并返回详细信息
     let _ = child.kill();
+    let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
+    let recent_logs = log_content.lines().rev().take(20).collect::<Vec<_>>().join("\n");
     Err(format!(
-        "Python backend started but did not respond within 5 seconds. Log: {}",
-        log_path.display()
+        "Python backend did not respond within 10 seconds.\nLog: {}\nRecent logs:\n{}",
+        log_path.to_string_lossy(),
+        if recent_logs.is_empty() { "(empty or unreadable)" } else { &recent_logs }
     ))
 }
 
