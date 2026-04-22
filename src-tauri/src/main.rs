@@ -115,7 +115,11 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     if let Some(stdout) = child.stdout.take() {
         thread::spawn(move || {
             let reader = std::io::BufReader::new(stdout);
-            let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(&log_path_stdout) {
+            let mut file = match std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path_stdout)
+            {
                 Ok(f) => f,
                 Err(e) => {
                     eprintln!("[Backend] Failed to open log for stdout: {}", e);
@@ -134,7 +138,11 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     if let Some(stderr) = child.stderr.take() {
         thread::spawn(move || {
             let reader = std::io::BufReader::new(stderr);
-            let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(&log_path_stderr) {
+            let mut file = match std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path_stderr)
+            {
                 Ok(f) => f,
                 Err(e) => {
                     eprintln!("[Backend] Failed to open log for stderr: {}", e);
@@ -168,12 +176,21 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
                 // 给后台线程一点时间写入日志
                 thread::sleep(Duration::from_millis(200));
                 let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
-                let recent_logs = log_content.lines().rev().take(20).collect::<Vec<_>>().join("\n");
+                let recent_logs = log_content
+                    .lines()
+                    .rev()
+                    .take(20)
+                    .collect::<Vec<_>>()
+                    .join("\n");
                 return Err(format!(
                     "Python backend exited early with code: {:?}\nLog: {}\nRecent logs:\n{}",
                     status.code(),
                     log_path.to_string_lossy(),
-                    if recent_logs.is_empty() { "(empty)" } else { &recent_logs }
+                    if recent_logs.is_empty() {
+                        "(empty)"
+                    } else {
+                        &recent_logs
+                    }
                 ));
             }
             Err(e) => return Err(format!("Failed to check child status: {e}")),
@@ -193,11 +210,20 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     // 给后台线程一点时间写入日志
     thread::sleep(Duration::from_millis(500));
     let log_content = std::fs::read_to_string(&log_path).unwrap_or_default();
-    let recent_logs = log_content.lines().rev().take(20).collect::<Vec<_>>().join("\n");
+    let recent_logs = log_content
+        .lines()
+        .rev()
+        .take(20)
+        .collect::<Vec<_>>()
+        .join("\n");
     Err(format!(
         "Python backend did not respond within 15 seconds.\nLog: {}\nRecent logs:\n{}",
         log_path.to_string_lossy(),
-        if recent_logs.is_empty() { "(empty or unreadable)" } else { &recent_logs }
+        if recent_logs.is_empty() {
+            "(empty or unreadable)"
+        } else {
+            &recent_logs
+        }
     ))
 }
 
