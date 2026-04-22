@@ -33,26 +33,32 @@ function showToast(message, type = 'info') {
 }
 
 async function initializeApiBase() {
+    console.log('[Tauri] Checking APIs. __TAURI__:', !!window.__TAURI__, '__TAURI_INTERNALS__:', !!window.__TAURI_INTERNALS__);
     const tauriInvoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
+    console.log('[Tauri] tauriInvoke available:', !!tauriInvoke);
+
     if (!tauriInvoke) {
-        console.log('Not running in Tauri, using default API_BASE:', API_BASE);
+        console.log('[Tauri] Not running in Tauri, using default API_BASE:', API_BASE);
         return;
     }
 
     showToast('正在启动本地后端...', 'info');
     try {
         const origin = await tauriInvoke('ensure_backend');
-        if (origin) {
+        console.log('[Tauri] ensure_backend returned:', origin, 'type:', typeof origin);
+        if (origin && typeof origin === 'string') {
             API_BASE = origin;
-            console.log('[Tauri] Backend ready at:', origin);
+            console.log('[Tauri] API_BASE updated to:', API_BASE);
             showToast('本地后端已启动', 'success');
             return;
         }
+        console.warn('[Tauri] ensure_backend returned invalid origin:', origin);
     } catch (error) {
         console.error('[Tauri] Failed to start backend:', error);
         const detail = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
         showToast(`启动本地后端失败: ${detail}`, 'error');
     }
+    console.log('[Tauri] API_BASE remains:', API_BASE);
 }
 
 async function apiCall(endpoint, method = 'GET', body = null) {
