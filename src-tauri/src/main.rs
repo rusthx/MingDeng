@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use portpicker::pick_unused_port;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -9,8 +11,7 @@ use std::{
     sync::Mutex,
     time::Duration,
 };
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
+
 use tauri::{AppHandle, Manager, State, WindowEvent};
 
 struct BackendHandle {
