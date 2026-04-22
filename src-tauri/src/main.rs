@@ -118,7 +118,12 @@ fn resolve_python(backend_dir: &Path) -> Result<PathBuf, String> {
         // Linux/macOS 标准 venv
         candidates.push(parent.join("backend-venv").join("bin").join("python"));
         // Windows 标准 venv (本地开发时使用)
-        candidates.push(parent.join("backend-venv").join("Scripts").join("python.exe"));
+        candidates.push(
+            parent
+                .join("backend-venv")
+                .join("Scripts")
+                .join("python.exe"),
+        );
     }
 
     for path in candidates {

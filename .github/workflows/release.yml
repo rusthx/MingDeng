@@ -80,7 +80,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.9'
+          python-version: '3.11.9'
 
       #  2：准备自包含的后端 Python 运行时
       #     Windows 用嵌入式发行版（离线可用），macOS/Linux 用 venv
@@ -125,20 +125,6 @@ jobs:
           ./backend-venv/bin/pip install -r backend/requirements.txt
           echo "=== 验证 ==="
           ./backend-venv/bin/python3 --version
-
-
-      #  2：创建真实的 venv 并安装后端依赖（解决 backend-venv 不存在报错）
-      - name: Create venv and install backend dependencies
-        shell: bash
-        run: |
-          python -m venv backend-venv
-          # 使用 bash 兼容 Windows 和 Mac/Linux 的路径调用 pip
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            ./backend-venv/Scripts/pip install -r backend/requirements.txt
-          else
-            ./backend-venv/bin/pip install --upgrade pip
-            ./backend-venv/bin/pip install -r backend/requirements.txt
-          fi
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@v1
