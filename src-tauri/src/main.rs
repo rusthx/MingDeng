@@ -61,7 +61,11 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
 
     // 智能选择日志路径：C盘安装时用 AppData 避免权限问题，其他盘写到安装目录
     let install_dir = backend_dir.parent().unwrap_or(&backend_dir);
-    let log_dir = if install_dir.to_string_lossy().to_lowercase().starts_with("c:\\") {
+    let log_dir = if install_dir
+        .to_string_lossy()
+        .to_lowercase()
+        .starts_with("c:\\")
+    {
         data_dir.clone()
     } else {
         let dir = install_dir.join("logs");
@@ -88,10 +92,12 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         "--port",
         &port.to_string(),
     ]);
-    cmd.stdout(Stdio::from(log_file.try_clone().map_err(|e| e.to_string())?));
+    cmd.stdout(Stdio::from(
+        log_file.try_clone().map_err(|e| e.to_string())?,
+    ));
     cmd.stderr(Stdio::from(log_file));
 
-    let child = cmd
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;
 
