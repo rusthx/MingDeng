@@ -34,7 +34,7 @@
     ],
     "resources": [
       "../backend",
-      "../backend-venv"
+      "../backend-runtime"
     ]
   }
 }

@@ -82,6 +82,51 @@ jobs:
         with:
           python-version: '3.9'
 
+      #  2：准备自包含的后端 Python 运行时
+      #     Windows 用嵌入式发行版（离线可用），macOS/Linux 用 venv
+      #     统一输出到 backend-runtime 目录，配合 tauri.conf.json 打包
+      - name: Prepare Python runtime (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          PYTHON_VERSION="3.11.9"
+          EMBED_DIR="backend-runtime"
+
+          echo "=== 下载 Python 嵌入式发行版 ==="
+          curl -L -o python-embed.zip \
+            "https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip"
+
+          echo "=== 解压 ==="
+          mkdir -p "$EMBED_DIR"
+          tar -xf python-embed.zip -C "$EMBED_DIR"
+          rm python-embed.zip
+
+          echo "=== 启用 site-packages ==="
+          sed -i 's/^#import site/import site/' "$EMBED_DIR"/python*._pth
+
+          echo "=== 安装 pip ==="
+          curl -L -o "$EMBED_DIR/get-pip.py" https://bootstrap.pypa.io/get-pip.py
+          "$EMBED_DIR/python.exe" "$EMBED_DIR/get-pip.py"
+          rm "$EMBED_DIR/get-pip.py"
+
+          echo "=== 安装后端依赖 ==="
+          "$EMBED_DIR/python.exe" -m pip install -r backend/requirements.txt
+
+          echo "=== 验证 ==="
+          "$EMBED_DIR/python.exe" --version
+          "$EMBED_DIR/python.exe" -c "import uvicorn; print('uvicorn OK')"
+
+      - name: Prepare Python runtime (macOS/Linux)
+        if: matrix.platform != 'windows-latest'
+        shell: bash
+        run: |
+          python3 -m venv backend-runtime
+          ./backend-runtime/bin/pip install --upgrade pip
+          ./backend-runtime/bin/pip install -r backend/requirements.txt
+          echo "=== 验证 ==="
+          ./backend-runtime/bin/python3 --version
+
+
       #  2：创建真实的 venv 并安装后端依赖（解决 backend-venv 不存在报错）
       - name: Create venv and install backend dependencies
         shell: bash
