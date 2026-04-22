@@ -33,25 +33,30 @@ function showToast(message, type = 'info') {
 }
 
 async function initializeApiBase() {
-    // Allow Tauri to provide a dynamic local backend origin; fallback to dev default.
     const tauriInvoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
-    if (tauriInvoke) {
-        try {
-            const origin = await tauriInvoke('ensure_backend');
-            if (origin) {
-                API_BASE = origin;
-                console.log('本地后端 ready at:', origin);
-                return;
-            }
-        } catch (error) {
-            console.error('Failed to start backend via Tauri:', error);
-            const detail = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
-            showToast(`启动本地后端失败: ${detail}`, 'error');
+    if (!tauriInvoke) {
+        console.log('Not running in Tauri, using default API_BASE:', API_BASE);
+        return;
+    }
+
+    showToast('正在启动本地后端...', 'info');
+    try {
+        const origin = await tauriInvoke('ensure_backend');
+        if (origin) {
+            API_BASE = origin;
+            console.log('[Tauri] Backend ready at:', origin);
+            showToast('本地后端已启动', 'success');
+            return;
         }
+    } catch (error) {
+        console.error('[Tauri] Failed to start backend:', error);
+        const detail = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
+        showToast(`启动本地后端失败: ${detail}`, 'error');
     }
 }
 
 async function apiCall(endpoint, method = 'GET', body = null) {
+    const url = `${API_BASE}${endpoint}`;
     try {
         const options = {
             method,
@@ -64,7 +69,9 @@ async function apiCall(endpoint, method = 'GET', body = null) {
             options.body = JSON.stringify(body);
         }
 
-        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        console.log(`[API] ${method} ${url}`, body || '');
+        const response = await fetch(url, options);
+        console.log(`[API] ${method} ${url} -> ${response.status}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -73,8 +80,17 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 
         return data;
     } catch (error) {
-        console.error('API Error:', error);
-        showToast(`错误: ${error.message}`, 'error');
+        console.error(`[API] ${method} ${url} failed:`, error);
+        // 诊断：区分 CORS 阻断还是网络层阻断
+        let diagnostic = '';
+        try {
+            await fetch(url, { mode: 'no-cors', method: 'HEAD' });
+            diagnostic = '（CORS 策略阻止了请求，后端已收到连接）';
+        } catch (e) {
+            diagnostic = '（网络层无法连接到后端）';
+        }
+        console.error(`[API] Diagnostic for ${url}: ${diagnostic}`);
+        showToast(`错误: ${error.message} ${diagnostic}`, 'error');
         throw error;
     }
 }
