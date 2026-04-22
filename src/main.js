@@ -40,11 +40,13 @@ async function initializeApiBase() {
             const origin = await tauriInvoke('ensure_backend');
             if (origin) {
                 API_BASE = origin;
+                console.log('本地后端 ready at:', origin);
                 return;
             }
         } catch (error) {
             console.error('Failed to start backend via Tauri:', error);
-            showToast('无法启动本地后端，请检查 Python 环境', 'error');
+            const detail = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
+            showToast(`启动本地后端失败: ${detail}`, 'error');
         }
     }
 }

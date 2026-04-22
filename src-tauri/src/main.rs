@@ -7,7 +7,6 @@ use std::{
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
-    thread,
     time::Duration,
 };
 use tauri::{AppHandle, Manager, State, WindowEvent};
@@ -44,8 +43,14 @@ impl BackendState {
 
 #[tauri::command]
 async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Result<String, String> {
+    // 如果已有后端，先检查是否还存活
     if let Some(origin) = state.origin() {
-        return Ok(origin);
+        if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
+            if resp.status().is_success() {
+                return Ok(origin);
+            }
+        }
+        state.shutdown();
     }
 
     let backend_dir = resolve_backend_dir(&app)?;
@@ -54,20 +59,23 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     let data_dir = resolve_data_dir(&app, &backend_dir)?;
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
-    // 测试日志写文件
-    if let Ok(mut f) = std::fs::OpenOptions::new()
+    // 智能选择日志路径：C盘安装时用 AppData 避免权限问题，其他盘写到安装目录
+    let install_dir = backend_dir.parent().unwrap_or(&backend_dir);
+    let log_dir = if install_dir.to_string_lossy().to_lowercase().starts_with("c:\\") {
+        data_dir.clone()
+    } else {
+        let dir = install_dir.join("logs");
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        dir
+    };
+    let log_path = log_dir.join("mingdeng_backend.log");
+    let log_file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open("mingdeng_debug.log")
-    {
-        use std::io::Write;
-        writeln!(f, "--- 启动探测 ---").ok();
-        writeln!(f, "backend_dir={}", backend_dir.display()).ok();
-        writeln!(f, "python={}", python.display()).ok();
-        writeln!(f, "python_exists={}", python.exists()).ok();
-    }
+        .open(&log_path)
+        .map_err(|e| format!("Failed to create log file: {e}"))?;
 
-    let mut cmd = Command::new(python);
+    let mut cmd = Command::new(&python);
     cmd.current_dir(&backend_dir);
     cmd.env("MINGDENG_DATA_DIR", &data_dir);
     cmd.env("PYTHONUNBUFFERED", "1");
@@ -80,19 +88,31 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         "--port",
         &port.to_string(),
     ]);
-    cmd.stdout(Stdio::null());
-    cmd.stderr(Stdio::null());
+    cmd.stdout(Stdio::from(log_file.try_clone().map_err(|e| e.to_string())?));
+    cmd.stderr(Stdio::from(log_file));
 
     let child = cmd
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;
 
-    // Give the backend a moment to bind before returning the origin.
-    thread::sleep(Duration::from_millis(300));
+    // 轮询健康检查，最多等待 5 秒
+    let origin = format!("http://127.0.0.1:{port}");
+    for _ in 0..50 {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
+            if resp.status().is_success() {
+                state.set(child, port);
+                return Ok(origin);
+            }
+        }
+    }
 
-    state.set(child, port);
-
-    Ok(format!("http://127.0.0.1:{port}"))
+    // 健康检查失败，终止进程并返回详细错误
+    let _ = child.kill();
+    Err(format!(
+        "Python backend started but did not respond within 5 seconds. Log: {}",
+        log_path.display()
+    ))
 }
 
 fn resolve_backend_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -139,14 +159,30 @@ fn resolve_python(backend_dir: &Path) -> Result<PathBuf, String> {
         );
     }
 
-    for path in candidates {
+    for path in &candidates {
         if path.exists() {
-            return Ok(path);
+            return Ok(path.clone());
         }
     }
 
+    // 开发环境回退：检测系统 Python 是否可用
     let default = if cfg!(windows) { "python" } else { "python3" };
-    Ok(PathBuf::from(default))
+    let fallback = PathBuf::from(default);
+    if Command::new(&fallback)
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+    {
+        return Ok(fallback);
+    }
+
+    Err(format!(
+        "Python executable not found. Checked: {}. Please install Python or ensure backend-venv is bundled.",
+        candidates.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ")
+    ))
 }
 
 fn resolve_data_dir(app: &AppHandle, backend_dir: &Path) -> Result<PathBuf, String> {
