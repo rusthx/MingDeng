@@ -78,7 +78,8 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         dir
     };
     let log_path = log_dir.join("mingdeng_backend.log");
-    let log_file = std::fs::OpenOptions::new()
+    // 日志文件由后台线程打开，此处预先创建目录即可
+    let _ = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
         .open(&log_path)
@@ -126,11 +127,9 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
                     return;
                 }
             };
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = writeln!(file, "{}", l);
-                    let _ = file.flush();
-                }
+            for l in reader.lines().flatten() {
+                let _ = writeln!(file, "{}", l);
+                let _ = file.flush();
             }
         });
     }
@@ -149,11 +148,9 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
                     return;
                 }
             };
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = writeln!(file, "{}", l);
-                    let _ = file.flush();
-                }
+            for l in reader.lines().flatten() {
+                let _ = writeln!(file, "{}", l);
+                let _ = file.flush();
             }
         });
     }
