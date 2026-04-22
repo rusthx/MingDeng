@@ -97,6 +97,10 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     ));
     cmd.stderr(Stdio::from(log_file));
 
+    // Windows: 隐藏 Python 进程的控制台窗口
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to start Python backend: {e}"))?;

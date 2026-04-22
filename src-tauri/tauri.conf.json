@@ -6,10 +6,10 @@
     "beforeDevCommand": "cd src && python -m http.server 1420 --bind 127.0.0.1",
     "beforeBuildCommand":"",
     "devUrl": "http://localhost:1420",
-    "frontendDist": "../src"
+    "frontendDist": "../src",
+    "withGlobalTauri": true
   },
   "app": {
-    "withGlobalTauri": true,
     "security": {
       "csp": null
     },
