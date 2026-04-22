@@ -113,10 +113,12 @@ fn resolve_python(backend_dir: &Path) -> Result<PathBuf, String> {
 
     let mut candidates = Vec::new();
     if let Some(parent) = backend_dir.parent() {
-        // 优先使用自包含运行时
-        candidates.push(parent.join("backend-runtime").join("python.exe"));
-        candidates.push(parent.join("backend-runtime").join("bin").join("python"));
-        // candidates.push(parent.join("backend-venv").join("Scripts").join("python.exe"));
+        // Windows 嵌入式 Python (CI 打包时使用，exe 直接在根目录)
+        candidates.push(parent.join("backend-venv").join("python.exe"));
+        // Linux/macOS 标准 venv
+        candidates.push(parent.join("backend-venv").join("bin").join("python"));
+        // Windows 标准 venv (本地开发时使用)
+        candidates.push(parent.join("backend-venv").join("Scripts").join("python.exe"));
     }
 
     for path in candidates {
