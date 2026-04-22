@@ -54,13 +54,18 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
     let data_dir = resolve_data_dir(&app, &backend_dir)?;
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
-    // 测试，打印当前使用的python路径
-    eprintln!("[MINGDENG-DEBUG] backend_dir={}", backend_dir.display());
-    eprintln!("[MINGDENG-DEBUG] python={}", python.display());
-    eprintln!(
-        "[MINGDENG-DEBUG] python_exists={}",
-        python.as_os_str().len() > 0 && python.exists()
-    );
+    // 测试日志写文件
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("mingdeng_debug.log")
+    {
+        use std::io::Write;
+        writeln!(f, "--- 启动探测 ---").ok();
+        writeln!(f, "backend_dir={}", backend_dir.display()).ok();
+        writeln!(f, "python={}", python.display()).ok();
+        writeln!(f, "python_exists={}", python.exists()).ok();
+    }
 
     let mut cmd = Command::new(python);
     cmd.current_dir(&backend_dir);
