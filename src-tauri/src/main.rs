@@ -9,6 +9,8 @@ use std::{
     sync::Mutex,
     time::Duration,
 };
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use tauri::{AppHandle, Manager, State, WindowEvent};
 
 struct BackendHandle {
