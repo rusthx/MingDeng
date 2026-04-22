@@ -34,7 +34,7 @@ function showToast(message, type = 'info') {
 
 async function initializeApiBase() {
     // Allow Tauri to provide a dynamic local backend origin; fallback to dev default.
-    const tauriInvoke = window.__TAURI__?.core?.invoke;
+    const tauriInvoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
     if (tauriInvoke) {
         try {
             const origin = await tauriInvoke('ensure_backend');
