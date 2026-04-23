@@ -9,12 +9,13 @@ use std::{
     io::{BufRead, Write},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
-    sync::Mutex,
+    // sync::Mutex replaced by tokio::sync::Mutex below
     thread,
     time::Duration,
 };
 
 use tauri::{AppHandle, Manager, State, WindowEvent};
+use tokio::sync::Mutex;
 
 struct BackendHandle {
     child: Child,
@@ -24,24 +25,22 @@ struct BackendHandle {
 struct BackendState(Mutex<Option<BackendHandle>>);
 
 impl BackendState {
-    fn set(&self, child: Child, port: u16) {
-        let mut guard = self.0.lock().expect("failed to lock backend state");
+    async fn set(&self, child: Child, port: u16) {
+        let mut guard = self.0.lock().await;
         *guard = Some(BackendHandle { child, port });
     }
 
-    fn origin(&self) -> Option<String> {
-        self.0.lock().ok().and_then(|guard| {
-            guard
-                .as_ref()
-                .map(|backend| format!("http://127.0.0.1:{}", backend.port))
-        })
+    async fn origin(&self) -> Option<String> {
+        let guard = self.0.lock().await;
+        guard
+            .as_ref()
+            .map(|backend| format!("http://127.0.0.1:{}", backend.port))
     }
 
-    fn shutdown(&self) {
-        if let Ok(mut guard) = self.0.lock() {
-            if let Some(mut backend) = guard.take() {
-                let _ = backend.child.kill();
-            }
+    async fn shutdown(&self) {
+        let mut guard = self.0.lock().await;
+        if let Some(mut backend) = guard.take() {
+            let _ = backend.child.kill();
         }
     }
 }
@@ -61,13 +60,13 @@ fn normalize_path(path: &Path) -> PathBuf {
 #[tauri::command]
 async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Result<String, String> {
     // 如果已有后端，先检查是否还存活
-    if let Some(origin) = state.origin() {
+    if let Some(origin) = state.origin().await {
         if let Ok(resp) = reqwest::get(format!("{}/", origin)).await {
             if resp.status().is_success() {
                 return Ok(origin);
             }
         }
-        state.shutdown();
+        state.shutdown().await;
     }
 
     let backend_dir = resolve_backend_dir(&app)?;
@@ -147,7 +146,7 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
                     return;
                 }
             };
-            for l in reader.lines().flatten() {
+            for l in reader.lines().map_while(Result::ok) {
                 let _ = writeln!(file, "{}", l);
                 let _ = file.flush();
             }
@@ -168,7 +167,7 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
                     return;
                 }
             };
-            for l in reader.lines().flatten() {
+            for l in reader.lines().map_while(Result::ok) {
                 let _ = writeln!(file, "{}", l);
                 let _ = file.flush();
             }
@@ -222,7 +221,7 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         {
             if let Ok(resp) = client.get(format!("{}/", origin)).send().await {
                 if resp.status().is_success() {
-                    state.set(child, port);
+                    state.set(child, port).await;
                     return Ok(origin);
                 }
             }
@@ -365,7 +364,7 @@ fn main() {
         .on_window_event(|window, event| {
             if matches!(event, WindowEvent::Destroyed) {
                 let state = window.state::<BackendState>();
-                state.shutdown();
+                tauri::async_runtime::block_on(state.shutdown());
             }
         })
         .run(tauri::generate_context!())
