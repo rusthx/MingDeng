@@ -32,6 +32,25 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// ============ 安全工具，转义用户数据插入==========
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function safeHref(url) {
+    if (!url) return '#';
+    const clean = String(url).trim();
+    const allowed = /^(https?|mailto):/i;
+    return allowed.test(clean) ? clean : '#';
+}
+
 async function initializeApiBase() {
     console.log('[Tauri] Checking APIs. __TAURI__:', !!window.__TAURI__, '__TAURI_INTERNALS__:', !!window.__TAURI_INTERNALS__);
     const tauriInvoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
@@ -238,21 +257,21 @@ function renderTaskCard(task) {
                 <div class="flex-1">
                     <div class="flex items-center gap-2 mb-1">
                         <h4 class="text-lg font-medium text-gray-900 dark:text-white ${isCompleted ? 'line-through text-gray-500' : ''}">
-                            ${task.task}
+                            ${escapeHtml(task.task)}
                         </h4>
                         <span class="text-sm">${difficultyIcons[task.difficulty]} ${difficultyText[task.difficulty]}</span>
                         <span class="text-sm text-gray-500">${timeText}</span>
                     </div>
                     ${task.tags && task.tags.length > 0 ? `
                         <div class="flex gap-1 flex-wrap mt-2">
-                            ${task.tags.map(tag => `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded">${tag}</span>`).join('')}
+                            ${task.tags.map(tag => `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded">${escapeHtml(tag)}</span>`).join('')}
                         </div>
                     ` : ''}
                     ${task.notes ? `
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${task.notes}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${escapeHtml(task.notes)}</p>
                     ` : ''}
                 </div>
-                <button class="text-red-500 hover:text-red-700" onclick="deleteTask('${task.id}')">
+                <button class="text-red-500 hover:text-red-700" onclick="deleteTask('${escapeHtml(task.id)}')">
                     🗑️
                 </button>
             </div>
@@ -432,9 +451,9 @@ function displayPlanPreview(plan) {
         <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <span class="font-medium text-gray-900 dark:text-white">${task.task}</span>
+                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(task.task)}</span>
                     <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        📅 ${task.date} | ⏱️ ${task.estimated_time}分钟 | ${getDifficultyIcon(task.difficulty)} ${task.difficulty}
+                        📅 ${escapeHtml(task.date)} | ⏱️ ${task.estimated_time}分钟 | ${getDifficultyIcon(task.difficulty)} ${escapeHtml(task.difficulty)}
                     </div>
                 </div>
             </div>
@@ -485,11 +504,11 @@ async function loadExistingPlans() {
         } else {
             container.innerHTML = plans.map(plan => `
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${plan.name}</h4>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">${escapeHtml(plan.name)}</h4>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         共 ${plan.tasks.length} 个任务
                     </p>
-                    <button class="text-sm text-red-500 hover:text-red-700" onclick="deletePlan('${plan.id}')">
+                    <button class="text-sm text-red-500 hover:text-red-700" onclick="deletePlan('${escapeHtml(plan.id)}')">
                         删除计划
                     </button>
                 </div>
@@ -673,16 +692,16 @@ async function loadResources() {
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-lg">${getResourceTypeIcon(resource.type)}</span>
-                                <span class="font-medium text-gray-900 dark:text-white">${resource.description || '资源'}</span>
+                                <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(resource.description || '资源')}</span>
                             </div>
-                            <a href="${resource.content}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">
-                                ${resource.content}
+                            <a href="${safeHref(resource.content)}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">
+                                ${escapeHtml(resource.content)}
                             </a>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                                 添加于: ${new Date(resource.captured_at).toLocaleString('zh-CN')}
                             </div>
                         </div>
-                        <button class="text-red-500 hover:text-red-700 ml-4" onclick="deleteResource('${resource.id}')">
+                        <button class="text-red-500 hover:text-red-700 ml-4" onclick="deleteResource('${escapeHtml(resource.id)}')">
                             🗑️
                         </button>
                     </div>
@@ -995,8 +1014,8 @@ function renderMonthView() {
                 </div>
                 <div class="space-y-1">
                     ${tasks.slice(0, 3).map(task => `
-                        <div class="text-xs px-1 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded truncate" title="${task.task}">
-                            ${getDifficultyIcon(task.difficulty)} ${task.task}
+                        <div class="text-xs px-1 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded truncate" title="${escapeHtml(task.task)}">
+                            ${getDifficultyIcon(task.difficulty)} ${escapeHtml(task.task)}
                         </div>
                     `).join('')}
                     ${tasks.length > 3 ? `<div class="text-xs text-gray-500 text-center">+${tasks.length - 3} 更多</div>` : ''}
@@ -1013,8 +1032,8 @@ function renderTasksSummary(tasks) {
 
     return tasks.slice(0, 3).map(task => `
         <div class="text-sm px-2 py-1 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 truncate"
-             title="${task.task}">
-            ${getDifficultyIcon(task.difficulty)} ${task.task}
+             title="${escapeHtml(task.task)}">
+            ${getDifficultyIcon(task.difficulty)} ${escapeHtml(task.task)}
         </div>
     `).join('') + (tasks.length > 3 ? `
         <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -1082,14 +1101,14 @@ function renderModalTask(task) {
                 <div class="flex-1">
                     <div class="flex items-center gap-2 mb-1">
                         <h4 class="text-base font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}">
-                            ${task.task}
+                            ${escapeHtml(task.task)}
                         </h4>
                         <span class="text-sm">${getDifficultyIcon(task.difficulty)} ${difficultyText[task.difficulty]}</span>
                         <span class="text-sm text-gray-500">${timeText}</span>
                     </div>
                     ${task.tags && task.tags.length > 0 ? `
                         <div class="flex gap-1 flex-wrap mt-2">
-                            ${task.tags.map(tag => `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded">${tag}</span>`).join('')}
+                            ${task.tags.map(tag => `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded">${escapeHtml(tag)}</span>`).join('')}
                         </div>
                     ` : ''}
                 </div>
@@ -1196,7 +1215,10 @@ async function sendChatMessage() {
     // Add user message
     const userMsgDiv = document.createElement('div');
     userMsgDiv.className = 'text-right';
-    userMsgDiv.innerHTML = `<div class="inline-block bg-blue-500 text-white px-3 py-2 rounded-lg max-w-xs">${message}</div>`;
+    const userBubble = document.createElement('div');
+    userBubble.className = 'inline-block bg-blue-500 text-white px-3 py-2 rounded-lg max-w-xs';
+    userBubble.textContent = message;
+    userMsgDiv.appendChild(userBubble);
     messagesContainer.appendChild(userMsgDiv);
 
     input.value = '';
@@ -1213,7 +1235,10 @@ async function sendChatMessage() {
         // Add AI response
         const aiMsgDiv = document.createElement('div');
         aiMsgDiv.className = 'text-left';
-        aiMsgDiv.innerHTML = `<div class="inline-block bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 rounded-lg max-w-xs">${data.response}</div>`;
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'inline-block bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 rounded-lg max-w-xs';
+        aiBubble.textContent = data.response;
+        aiMsgDiv.appendChild(aiBubble);
         messagesContainer.appendChild(aiMsgDiv);
 
         // Scroll to bottom

@@ -123,6 +123,17 @@ class BackupManager:
         backups.sort(key=lambda x: x["timestamp"], reverse=True)
         return backups
 
+    def _validate_backup_path(self, backup_id: str) -> Optional[Path]:
+        """Validate backup_id and return resolved path if safe, else None."""
+        try:
+            backup_path = (self.backup_dir / backup_id).resolve()
+            backup_dir_resolved = self.backup_dir.resolve()
+            if not str(backup_path).startswith(str(backup_dir_resolved)):
+                return None
+            return backup_path
+        except Exception:
+            return None
+
     def restore_backup(self, backup_id: str) -> Dict[str, Any]:
         """
         Restore data from a backup
@@ -133,12 +144,11 @@ class BackupManager:
         Returns:
             Restoration result
         """
-        backup_path = self.backup_dir / backup_id
-
-        if not backup_path.exists():
+        backup_path = self._validate_backup_path(backup_id)
+        if not backup_path or not backup_path.exists():
             return {
                 "success": False,
-                "error": "备份不存在"
+                "error": "备份不存在或ID不合法"
             }
 
         try:
@@ -180,9 +190,8 @@ class BackupManager:
         Returns:
             Success status
         """
-        backup_path = self.backup_dir / backup_id
-
-        if not backup_path.exists():
+        backup_path = self._validate_backup_path(backup_id)
+        if not backup_path or not backup_path.exists():
             return False
 
         try:

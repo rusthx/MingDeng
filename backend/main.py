@@ -9,6 +9,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import uvicorn
+import logging
+
+logger = logging.getLogger("mingdeng")
 
 from core.config import config_manager
 from core.todo_manager import todo_manager
@@ -20,10 +23,16 @@ from core.ai import ai_client
 
 app = FastAPI(title="MingDeng API", version="0.1.0")
 
-# Enable CORS for Tauri
+# Enable CORS for Tauri (限制为仅本地和 Tauri 内部使用)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:1420",
+        "http://localhost:8000",
+        "http://127.0.0.1:1420",
+        "http://127.0.0.1:8000",
+        "tauri://localhost",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,10 +102,7 @@ async def get_config():
     config = config_manager.get_config()
     # Don't expose full API key
     api_key = config.api.api_key
-    if api_key and len(api_key) > 8:
-        masked_key = api_key[:4] + "..." + api_key[-4:]
-    else:
-        masked_key = "***" if api_key else ""
+    masked_key = "sk-..." if api_key else ""
 
     return {
         "api": {
@@ -132,8 +138,9 @@ async def update_config(config_update: ConfigUpdate):
             )
 
         return {"success": True, "message": "配置已更新"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Task Endpoints ============
@@ -144,8 +151,9 @@ async def get_today_tasks():
     try:
         tasks = todo_manager.get_today_tasks()
         return {"success": True, "tasks": tasks}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.get("/api/tasks/date/{date}")
@@ -154,8 +162,9 @@ async def get_tasks_by_date(date: str):
     try:
         tasks = todo_manager.get_tasks_by_date(date)
         return {"success": True, "tasks": tasks}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks")
@@ -169,8 +178,9 @@ async def create_task(task_create: TaskCreate):
             return {"success": True, "task": task}
         else:
             raise HTTPException(status_code=404, detail="计划不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.put("/api/tasks/{task_id}")
@@ -184,8 +194,9 @@ async def update_task(task_id: str, task_update: TaskUpdate):
             return {"success": True, "message": "任务已更新"}
         else:
             raise HTTPException(status_code=404, detail="任务不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.delete("/api/tasks/{task_id}")
@@ -198,8 +209,9 @@ async def delete_task(task_id: str):
             return {"success": True, "message": "任务已删除"}
         else:
             raise HTTPException(status_code=404, detail="任务不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks/{task_id}/complete")
@@ -212,8 +224,9 @@ async def complete_task(task_id: str):
             return {"success": True, "message": "任务已完成"}
         else:
             raise HTTPException(status_code=404, detail="任务不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks/{task_id}/uncomplete")
@@ -226,8 +239,9 @@ async def uncomplete_task(task_id: str):
             return {"success": True, "message": "任务已取消完成"}
         else:
             raise HTTPException(status_code=404, detail="任务不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Plan Endpoints ============
@@ -238,8 +252,9 @@ async def get_all_plans():
     try:
         plans = todo_manager.get_all_plans()
         return {"success": True, "plans": plans}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.get("/api/plans/{plan_id}")
@@ -251,8 +266,9 @@ async def get_plan(plan_id: str):
             return {"success": True, "plan": plan}
         else:
             raise HTTPException(status_code=404, detail="计划不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.delete("/api/plans/{plan_id}")
@@ -265,8 +281,9 @@ async def delete_plan(plan_id: str):
             return {"success": True, "message": "计划已删除"}
         else:
             raise HTTPException(status_code=404, detail="计划不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/plan/generate")
@@ -281,8 +298,9 @@ async def generate_plan(plan_gen: PlanGenerate):
             plan_gen.start_date
         )
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 class RescheduleRequest(BaseModel):
@@ -302,8 +320,9 @@ async def reschedule_tasks(reschedule_req: RescheduleRequest):
             plan_id=reschedule_req.plan_id
         )
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Chat Endpoints ============
@@ -342,8 +361,9 @@ async def chat(chat_msg: ChatMessage):
             memory_manager.add_message("assistant", response)
 
             return {"success": True, "response": response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Resource Endpoints ============
@@ -354,8 +374,9 @@ async def get_all_resources():
     try:
         resources = library_manager.get_all_resources()
         return {"success": True, "resources": resources}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.get("/api/resources/{resource_id}")
@@ -367,8 +388,9 @@ async def get_resource(resource_id: str):
             return {"success": True, "resource": resource}
         else:
             raise HTTPException(status_code=404, detail="资源不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/resources")
@@ -382,8 +404,9 @@ async def create_resource(resource_create: ResourceCreate):
             auto_link=resource_create.auto_link
         )
         return {"success": True, "resource": resource}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.put("/api/resources/{resource_id}")
@@ -397,8 +420,9 @@ async def update_resource(resource_id: str, resource_update: ResourceUpdate):
             return {"success": True, "message": "资源已更新"}
         else:
             raise HTTPException(status_code=404, detail="资源不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.delete("/api/resources/{resource_id}")
@@ -411,8 +435,9 @@ async def delete_resource(resource_id: str):
             return {"success": True, "message": "资源已删除"}
         else:
             raise HTTPException(status_code=404, detail="资源不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.get("/api/resources/task/{task_id}")
@@ -421,8 +446,9 @@ async def get_resources_for_task(task_id: str):
     try:
         resources = library_manager.get_resources_for_task(task_id)
         return {"success": True, "resources": resources}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Stats Endpoints ============
@@ -433,8 +459,9 @@ async def get_stats():
     try:
         stats = todo_manager.get_stats()
         return {"success": True, "stats": stats}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Backup Endpoints ============
@@ -445,8 +472,9 @@ async def create_backup(reason: str = Body("Manual backup", embed=True)):
     try:
         result = backup_manager.create_backup(reason)
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.get("/api/backups")
@@ -455,8 +483,9 @@ async def list_backups():
     try:
         backups = backup_manager.list_backups()
         return {"success": True, "backups": backups}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.post("/api/restore/{backup_id}")
@@ -465,8 +494,9 @@ async def restore_backup(backup_id: str):
     try:
         result = backup_manager.restore_backup(backup_id)
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 @app.delete("/api/backups/{backup_id}")
@@ -479,8 +509,9 @@ async def delete_backup(backup_id: str):
             return {"success": True, "message": "备份已删除"}
         else:
             raise HTTPException(status_code=404, detail="备份不存在")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("请求处理失败")
+        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
 
 
 # ============ Health Check ============
