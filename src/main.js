@@ -85,12 +85,10 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     try {
         const options = {
             method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
         };
 
         if (body) {
+            options.headers = { 'Content-Type': 'application/json' };
             options.body = JSON.stringify(body);
         }
 
@@ -109,7 +107,7 @@ async function apiCall(endpoint, method = 'GET', body = null) {
         // 诊断：区分 CORS 阻断还是网络层阻断
         let diagnostic = '';
         try {
-            await fetch(url, { mode: 'no-cors', method: 'HEAD' });
+            await fetch(url, { mode: 'no-cors', method: 'GET' });
             diagnostic = '（CORS 策略阻止了请求，后端已收到连接）';
         } catch (e) {
             diagnostic = '（网络层无法连接到后端）';
