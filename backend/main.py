@@ -11,8 +11,6 @@ from typing import Optional, List
 import uvicorn
 import logging
 
-logger = logging.getLogger("mingdeng")
-
 from core.config import config_manager
 from core.todo_manager import todo_manager
 from core.plan_generator import plan_generator
@@ -20,6 +18,8 @@ from core.library_manager import library_manager
 from core.backup_manager import backup_manager
 from core.memory import memory_manager
 from core.ai import ai_client
+
+logger = logging.getLogger("mingdeng")
 
 app = FastAPI(title="MingDeng API", version="0.1.0")
 
@@ -140,7 +140,7 @@ async def update_config(config_update: ConfigUpdate):
         return {"success": True, "message": "配置已更新"}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Task Endpoints ============
@@ -153,7 +153,7 @@ async def get_today_tasks():
         return {"success": True, "tasks": tasks}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.get("/api/tasks/date/{date}")
@@ -164,7 +164,7 @@ async def get_tasks_by_date(date: str):
         return {"success": True, "tasks": tasks}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks")
@@ -180,7 +180,7 @@ async def create_task(task_create: TaskCreate):
             raise HTTPException(status_code=404, detail="计划不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.put("/api/tasks/{task_id}")
@@ -196,7 +196,7 @@ async def update_task(task_id: str, task_update: TaskUpdate):
             raise HTTPException(status_code=404, detail="任务不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.delete("/api/tasks/{task_id}")
@@ -211,7 +211,7 @@ async def delete_task(task_id: str):
             raise HTTPException(status_code=404, detail="任务不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks/{task_id}/complete")
@@ -226,7 +226,7 @@ async def complete_task(task_id: str):
             raise HTTPException(status_code=404, detail="任务不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/tasks/{task_id}/uncomplete")
@@ -241,7 +241,7 @@ async def uncomplete_task(task_id: str):
             raise HTTPException(status_code=404, detail="任务不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Plan Endpoints ============
@@ -254,7 +254,7 @@ async def get_all_plans():
         return {"success": True, "plans": plans}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.get("/api/plans/{plan_id}")
@@ -268,7 +268,7 @@ async def get_plan(plan_id: str):
             raise HTTPException(status_code=404, detail="计划不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.delete("/api/plans/{plan_id}")
@@ -283,7 +283,7 @@ async def delete_plan(plan_id: str):
             raise HTTPException(status_code=404, detail="计划不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/plan/generate")
@@ -300,7 +300,7 @@ async def generate_plan(plan_gen: PlanGenerate):
         return result
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 class RescheduleRequest(BaseModel):
@@ -322,7 +322,7 @@ async def reschedule_tasks(reschedule_req: RescheduleRequest):
         return result
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Chat Endpoints ============
@@ -363,7 +363,7 @@ async def chat(chat_msg: ChatMessage):
             return {"success": True, "response": response}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Resource Endpoints ============
@@ -376,7 +376,7 @@ async def get_all_resources():
         return {"success": True, "resources": resources}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.get("/api/resources/{resource_id}")
@@ -390,7 +390,7 @@ async def get_resource(resource_id: str):
             raise HTTPException(status_code=404, detail="资源不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/resources")
@@ -406,7 +406,7 @@ async def create_resource(resource_create: ResourceCreate):
         return {"success": True, "resource": resource}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.put("/api/resources/{resource_id}")
@@ -422,7 +422,7 @@ async def update_resource(resource_id: str, resource_update: ResourceUpdate):
             raise HTTPException(status_code=404, detail="资源不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.delete("/api/resources/{resource_id}")
@@ -437,7 +437,7 @@ async def delete_resource(resource_id: str):
             raise HTTPException(status_code=404, detail="资源不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.get("/api/resources/task/{task_id}")
@@ -448,7 +448,7 @@ async def get_resources_for_task(task_id: str):
         return {"success": True, "resources": resources}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Stats Endpoints ============
@@ -461,7 +461,7 @@ async def get_stats():
         return {"success": True, "stats": stats}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Backup Endpoints ============
@@ -474,7 +474,7 @@ async def create_backup(reason: str = Body("Manual backup", embed=True)):
         return result
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.get("/api/backups")
@@ -485,7 +485,7 @@ async def list_backups():
         return {"success": True, "backups": backups}
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.post("/api/restore/{backup_id}")
@@ -496,7 +496,7 @@ async def restore_backup(backup_id: str):
         return result
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 @app.delete("/api/backups/{backup_id}")
@@ -511,7 +511,7 @@ async def delete_backup(backup_id: str):
             raise HTTPException(status_code=404, detail="备份不存在")
     except Exception:
         logger.exception("请求处理失败")
-        raise HTTPException(status_code=500, detail="服务器内部错误，请检查日志")
+        raise HTTPException(status_code=500, detail="本地服务器内部错误，请检查日志")
 
 
 # ============ Health Check ============
