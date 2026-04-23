@@ -216,7 +216,10 @@ async fn ensure_backend(app: AppHandle, state: State<'_, BackendState>) -> Resul
         }
 
         // 先进行 TCP 端口探测，确认端口是否真正开放
-        if tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port)).await.is_ok() {
+        if tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port))
+            .await
+            .is_ok()
+        {
             if let Ok(resp) = client.get(format!("{}/", origin)).send().await {
                 if resp.status().is_success() {
                     state.set(child, port);
